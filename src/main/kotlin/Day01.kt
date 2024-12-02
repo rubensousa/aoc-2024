@@ -4,7 +4,7 @@ object Day01 {
 
     @JvmStatic
     fun main(args: Array<String>) {
-        val testInput = readText("day1_input.txt")
+        val testInput = readText("day01.txt")
         val list1 = mutableListOf<Int>()
         val list2 = mutableListOf<Int>()
         testInput.forEach { line ->
