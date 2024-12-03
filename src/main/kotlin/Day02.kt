@@ -1,4 +1,5 @@
 import kotlin.math.abs
+import kotlin.time.measureTime
 
 object Day02 {
 
@@ -13,14 +14,18 @@ object Day02 {
             )
         }
         getCompletelySafeReports(reports).println()
-        reports.forEach { report ->
-            val quadratic = isPartiallySafeQuadratic(report)
-            val linear = isPartiallySafeLinear(report.values)
-            if (linear != quadratic) {
-                // TODO: Fix linear algorithm
-               // report.println()
+        val quadraticDuration = measureTime {
+            reports.forEach { report ->
+                isPartiallySafeQuadratic(report)
             }
         }
+        val linearDuration = measureTime {
+            reports.forEach { report ->
+                isPartiallySafe(report.values)
+            }
+        }
+        println("Quadratic: ${quadraticDuration.inWholeNanoseconds}")
+        println("Linear: ${linearDuration.inWholeNanoseconds}")
         getPartiallySafeReports(reports).println()
     }
 
@@ -29,7 +34,7 @@ object Day02 {
     }
 
     fun getPartiallySafeReports(reports: List<Day02Report>): Int {
-        return reports.count { report -> isPartiallySafeQuadratic(report) }
+        return reports.count { report -> isPartiallySafe(report.values) }
     }
 
     private fun removeReportValue(report: Day02Report, index: Int): Day02Report {
@@ -38,67 +43,97 @@ object Day02 {
         return Day02Report(originalValues.toList())
     }
 
-    // TODO: Not passing all tests
-    fun isPartiallySafeLinear(values: List<Int>): Boolean {
-        val size = values.size
-        val winningStack = ArrayDeque<Int>()
-        var winningStackOrder = 0
-        winningStack.addFirst(values.first())
-        val backupStack = ArrayDeque<Int>()
-        var backupStackOrder = 0
+    // Avoids unnecessary allocations for each report calculation
+    private val sequencePool = List(3) { Sequence(0) }
 
-        for (i in 1 until size) {
-            val currentValue = values[i]
-            val winningValue = winningStack.first()
-            val backupValue = backupStack.firstOrNull()
-            val winningDiff = abs(winningValue - currentValue)
-            if (winningDiff in 1..3) {
-                if (winningStackOrder == 0) {
-                    if (currentValue > winningValue) {
-                        winningStackOrder = 1
-                    } else {
-                        winningStackOrder = -1
-                    }
-                    winningStack.addFirst(currentValue)
-                } else if (winningStackOrder > 0 && currentValue > winningValue) {
-                    winningStack.addFirst(currentValue)
-                } else if (winningStackOrder < 0 && currentValue < winningValue) {
-                    winningStack.addFirst(currentValue)
-                }
-            }
-            if (backupValue == null) {
-                if (currentValue != winningValue) {
-                    backupStack.addFirst(currentValue)
-                }
-            } else {
-                if (abs(backupValue - currentValue) in 1..3) {
-                    if (currentValue > backupValue) {
-                        if (backupStackOrder == 0 || backupStackOrder == 1) {
-                            backupStackOrder = 1
-                            backupStack.addFirst(currentValue)
-                        }
-                    } else {
-                        if (backupStackOrder == 0 || backupStackOrder == -1) {
-                            backupStackOrder = -1
-                            backupStack.addFirst(currentValue)
-                        }
-                    }
-                } else {
-                    val topBackup = backupStack.removeFirst()
-                    var topWinning = winningStack.first()
-                    if (topBackup == topWinning) {
-                        backupStack.clear()
-                        topWinning = values.first()
-                    }
-                    if (backupStack.isEmpty() && abs(topWinning - currentValue) in 1..3) {
-                        backupStack.addFirst(topWinning)
-                    }
+    fun isPartiallySafe(values: List<Int>): Boolean {
+        // Edge cases first
+        if (values.size <= 2) {
+            return true
+        }
+        val minimalSize = values.size - 1
 
-                    backupStack.addFirst(currentValue)
+        /**
+         * 3 sequence states.
+         * Primary: Sequence for first position with second position
+         * Secondary: Sequence for first position with third position
+         * Tertiary: Sequence for second position and any other position
+         */
+        val primarySequence = sequencePool[0]
+        val secondarySequence = sequencePool[1]
+        val tertiarySequence = sequencePool[2]
+        values.forEachIndexed { index, currentValue ->
+            when (index) {
+                0 -> {
+                    primarySequence.setInitialValue(currentValue)
+                    secondarySequence.setInitialValue(currentValue)
+                }
+
+                1 -> {
+                    primarySequence.add(currentValue)
+                    tertiarySequence.setInitialValue(currentValue)
+                }
+
+                else -> {
+                    primarySequence.add(currentValue)
+                    secondarySequence.add(currentValue)
+                    tertiarySequence.add(currentValue)
                 }
             }
         }
-        return winningStack.size + 1 >= size || backupStack.size + 1 >= size
+
+        return sequencePool.find { it.total >= minimalSize } != null
+    }
+
+    private class Sequence(initialValue: Int) {
+
+        var total = 1
+            private set
+
+        private var currentValue: Int = initialValue
+        private var misses: Int = 0
+        private var ascending: Boolean = false
+
+        fun setInitialValue(value: Int) {
+            currentValue = value
+            misses = 0
+            total = 1
+            ascending = false
+        }
+
+        fun add(nextValue: Int) {
+            if (misses > 1) {
+                return
+            }
+            if (!isDiffAcceptable(currentValue, nextValue)) {
+                misses++
+                return
+            }
+            if (total == 1) {
+                ascending = nextValue > currentValue
+                currentValue = nextValue
+                total++
+                return
+            }
+            if (ascending && nextValue > currentValue) {
+                currentValue = nextValue
+                total++
+            } else if (!ascending && nextValue < currentValue) {
+                currentValue = nextValue
+                total++
+            } else {
+                misses++
+            }
+        }
+
+        override fun toString(): String {
+            return "Current value: $currentValue, ascending: $ascending"
+        }
+
+    }
+
+    private fun isDiffAcceptable(first: Int, second: Int): Boolean {
+        return abs(first - second) in 1..3
     }
 
     private fun isPartiallySafeQuadratic(report: Day02Report): Boolean {
@@ -120,8 +155,7 @@ object Day02 {
         var increasing = false
         for (i in 1 until report.values.size) {
             val nextValue = report.values[i]
-            val diff = abs(currentValue - nextValue)
-            if (diff > 3 || diff == 0) {
+            if (!isDiffAcceptable(currentValue, nextValue)) {
                 return false
             }
             if (i == 1) {
