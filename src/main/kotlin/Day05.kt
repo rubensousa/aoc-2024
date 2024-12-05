@@ -28,7 +28,7 @@ object Day05 {
             getMiddleSumPart2(rules, updates).println()
         }.inWholeNanoseconds.println()
 
-        // 6319, 8ms
+        // 6319, 5ms
         measureTime {
             getMiddleSumPart2Sort(rules, updates).println()
         }.inWholeNanoseconds.println()
@@ -119,16 +119,7 @@ object Day05 {
 
     fun fixUpdateTopological(content: List<Int>, rules: Rules): List<Int> {
         val contentNumbers = content.toSet()
-        val ruleGraph = rules.get().toMutableMap()
-        val iterator = ruleGraph.keys.iterator()
-        // Remove rules that not apply, to exclude loops
-        while (iterator.hasNext()) {
-            val number = iterator.next()
-            if (!contentNumbers.contains(number)) {
-                iterator.remove()
-            }
-        }
-        val sortedNodes = topologicalSort(ruleGraph)
+        val sortedNodes = topologicalSort(rules.get(), contentNumbers)
         return sortedNodes.mapNotNull { node ->
             if (contentNumbers.contains(node)) {
                 node
@@ -138,20 +129,23 @@ object Day05 {
         }
     }
 
-    private fun topologicalSort(graph: Map<Int, Set<Int>>): List<Int> {
+    private fun topologicalSort(
+        graph: Map<Int, Set<Int>>,
+        validNumbers: Set<Int>
+    ): List<Int> {
         val visited = mutableSetOf<Int>()
         val output = mutableListOf<Int>()
         fun explore(vertex: Int) {
             visited += vertex
             for (neighbour in graph[vertex].orEmpty()) {
-                if (neighbour !in visited) {
+                if (neighbour !in visited && validNumbers.contains(neighbour)) {
                     explore(neighbour)
                 }
             }
             output += vertex
         }
         graph.keys.forEach { vertex ->
-            if (vertex !in visited) {
+            if (vertex !in visited && validNumbers.contains(vertex)) {
                 explore(vertex)
             }
         }
