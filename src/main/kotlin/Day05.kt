@@ -1,3 +1,5 @@
+import kotlin.time.measureTime
+
 object Day05 {
 
     @JvmStatic
@@ -17,8 +19,19 @@ object Day05 {
                 rules.add(firstNumber, secondNumber)
             }
         }
+
+        // 4790, 6ms
         getMiddleSum(rules, updates).println()
-        getMiddleSumPart2(rules, updates).println()
+
+        // 6319, 27ms
+        measureTime {
+            getMiddleSumPart2(rules, updates).println()
+        }.inWholeNanoseconds.println()
+
+        // 6319, 8ms
+        measureTime {
+            getMiddleSumPart2Sort(rules, updates).println()
+        }.inWholeNanoseconds.println()
     }
 
     fun getMiddleSum(rules: Rules, updates: List<Update>): Int {
@@ -38,6 +51,20 @@ object Day05 {
         }
         invalidUpdates.forEach { update ->
             val fixedUpdate = fixUpdate(update.content, rules)
+            sum += getMiddle(fixedUpdate)
+        }
+        return sum
+    }
+
+    fun getMiddleSumPart2Sort(rules: Rules, updates: List<Update>): Int {
+        var sum = 0
+        val invalidUpdates = mutableSetOf<Update>()
+        invalidUpdates.addAll(updates)
+        getValidUpdates(rules, updates).forEach { update ->
+            invalidUpdates.remove(update)
+        }
+        invalidUpdates.forEach { update ->
+            val fixedUpdate = fixUpdateTopological(update.content, rules)
             sum += getMiddle(fixedUpdate)
         }
         return sum
@@ -66,11 +93,11 @@ object Day05 {
         newContent.forEachIndexed { index, value ->
             numberIndexes[value] = index
         }
-        val mutableRules = rules.mutate()
+        val mutableRules = rules.get()
         var i = 1
         while (i < newContent.size) {
             val firstNumber = newContent[i]
-            val rule = mutableRules[firstNumber] ?: mutableListOf()
+            val rule = mutableRules[firstNumber] ?: emptySet()
             var newIndex = i + 1
             val iterator = rule.iterator()
             while (iterator.hasNext()) {
@@ -90,9 +117,51 @@ object Day05 {
         return newContent
     }
 
+    fun fixUpdateTopological(content: List<Int>, rules: Rules): List<Int> {
+        val contentNumbers = content.toSet()
+        val ruleGraph = rules.get().toMutableMap()
+        val iterator = ruleGraph.keys.iterator()
+        // Remove rules that not apply, to exclude loops
+        while (iterator.hasNext()) {
+            val number = iterator.next()
+            if (!contentNumbers.contains(number)) {
+                iterator.remove()
+            }
+        }
+        val sortedNodes = topologicalSort(ruleGraph)
+        return sortedNodes.mapNotNull { node ->
+            if (contentNumbers.contains(node)) {
+                node
+            } else {
+                null
+            }
+        }
+    }
+
+    private fun topologicalSort(graph: Map<Int, Set<Int>>): List<Int> {
+        val visited = mutableSetOf<Int>()
+        val output = mutableListOf<Int>()
+        fun explore(vertex: Int) {
+            visited += vertex
+            for (neighbour in graph[vertex].orEmpty()) {
+                if (neighbour !in visited) {
+                    explore(neighbour)
+                }
+            }
+            output += vertex
+        }
+        graph.keys.forEach { vertex ->
+            if (vertex !in visited) {
+                explore(vertex)
+            }
+        }
+        return output.reversed()
+    }
+
     private fun isValid(update: List<Int>, rules: Rules): Boolean {
         var i = 1
         var j = 0
+
         while (i < update.size) {
             val currentNumber = update[i]
             val numbersBefore = rules.getRule(currentNumber)
@@ -113,15 +182,9 @@ object Day05 {
 
     class Rules {
 
-        private val nodes = mutableMapOf<Int, RuleNode>()
+        private val nodes = mutableMapOf<Int, MutableSet<Int>>()
 
-        fun mutate(): Map<Int, MutableList<Int>> {
-            val output = mutableMapOf<Int, MutableList<Int>>()
-            nodes.forEach { entry ->
-                output[entry.key] = entry.value.getNext().toMutableList()
-            }
-            return output
-        }
+        fun get(): Map<Int, Set<Int>> = nodes
 
         fun add(pairs: List<Pair<Int, Int>>) {
             pairs.forEach { add(it) }
@@ -132,30 +195,17 @@ object Day05 {
         }
 
         fun add(firstNumber: Int, secondNumber: Int) {
-            val rule = nodes.getOrPut(firstNumber) { RuleNode(firstNumber) }
+            val rule = nodes.getOrPut(firstNumber) { mutableSetOf() }
             rule.add(secondNumber)
         }
 
         fun getRule(firstNumber: Int): Set<Int> {
-            return nodes[firstNumber]?.getNext() ?: emptySet()
+            return nodes[firstNumber] ?: emptySet()
         }
 
         override fun toString(): String {
             return nodes.toString()
         }
-
-    }
-
-    data class RuleNode(
-        private val number: Int,
-        private val children: MutableSet<Int> = mutableSetOf()
-    ) {
-
-        fun add(next: Int) {
-            children.add(next)
-        }
-
-        fun getNext(): Set<Int> = children.toSet()
 
     }
 
