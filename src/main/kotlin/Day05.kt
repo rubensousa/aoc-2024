@@ -44,28 +44,22 @@ object Day05 {
 
     fun getMiddleSumPart2(rules: Rules, updates: List<Update>): Int {
         var sum = 0
-        val invalidUpdates = mutableSetOf<Update>()
-        invalidUpdates.addAll(updates)
-        getValidUpdates(rules, updates).forEach { update ->
-            invalidUpdates.remove(update)
-        }
-        invalidUpdates.forEach { update ->
-            val fixedUpdate = fixUpdate(update.content, rules)
-            sum += getMiddle(fixedUpdate)
+        updates.forEach { update ->
+            if (!isValid(update.content, rules)) {
+                val fixedUpdate = fixUpdate(update.content, rules)
+                sum += getMiddle(fixedUpdate)
+            }
         }
         return sum
     }
 
     fun getMiddleSumPart2Sort(rules: Rules, updates: List<Update>): Int {
         var sum = 0
-        val invalidUpdates = mutableSetOf<Update>()
-        invalidUpdates.addAll(updates)
-        getValidUpdates(rules, updates).forEach { update ->
-            invalidUpdates.remove(update)
-        }
-        invalidUpdates.forEach { update ->
-            val fixedUpdate = fixUpdateTopological(update.content, rules)
-            sum += getMiddle(fixedUpdate)
+        updates.forEach { update ->
+            if (!isValid(update.content, rules)) {
+                val fixedUpdate = topologicalSort(rules.get(), update.content.toSet())
+                sum += getMiddle(fixedUpdate)
+            }
         }
         return sum
     }
@@ -115,18 +109,6 @@ object Day05 {
             i = newIndex
         }
         return newContent
-    }
-
-    fun fixUpdateTopological(content: List<Int>, rules: Rules): List<Int> {
-        val contentNumbers = content.toSet()
-        val sortedNodes = topologicalSort(rules.get(), contentNumbers)
-        return sortedNodes.mapNotNull { node ->
-            if (contentNumbers.contains(node)) {
-                node
-            } else {
-                null
-            }
-        }
     }
 
     private fun topologicalSort(
