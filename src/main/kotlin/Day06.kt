@@ -42,44 +42,42 @@ object Day06 {
 
     fun findObstructions(grid: Grid): Int {
         var total = 0
-        val allObstructions = calculateAllObstructions(grid)
+        val visitedPoints = findSteps(grid)
+        val allObstructions = calculateAllObstructions(grid, visitedPoints)
         allObstructions.forEach { obstruction ->
             grid.setTemporaryObstacle(obstruction)
-            if (hasLoop(grid)) {
+            if (hasLoop(grid, visitedPoints)) {
                 total++
             }
         }
         return total
     }
 
-    private fun hasLoop(grid: Grid): Boolean {
-        val visitCounts = mutableMapOf<Point, Int>()
+    private fun hasLoop(grid: Grid, visitedPoints: Set<Point>): Boolean {
         val startPoint = grid.getStartPoint()
         var row = startPoint.row
         var col = startPoint.column
         var direction = Direction.UP
+        var length = 0
 
         while (row >= 0 && col >= 0 && row <= grid.getLastRow() && col <= grid.getLastColumn()) {
             if (grid.hasObstacle(row, col)) {
-                val point = Point(row, col)
-                val visitCount = visitCounts.getOrPut(point) { 0 }
-                if (visitCount == 3) {
+                if (length > visitedPoints.size * 2) {
                     return true
                 }
-                visitCounts[point] = visitCount + 1
                 row -= direction.rowDir
                 col -= direction.colDir
                 direction = direction.next()
             }
+            length++
             row += direction.rowDir
             col += direction.colDir
         }
         return false
     }
 
-    private fun calculateAllObstructions(grid: Grid): Set<Point> {
+    private fun calculateAllObstructions(grid: Grid, visitedPoints: Set<Point>): Set<Point> {
         val obstructions = mutableSetOf<Point>()
-        val visitedPoints = findSteps(grid)
         for (r in 0 until grid.getLastRow() + 1) {
             for (c in 0 until grid.getLastColumn() + 1) {
                 if (grid.hasPath(r, c)) {
