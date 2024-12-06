@@ -11,10 +11,9 @@ object Day06 {
             grid.add(line)
         }
 
-        findSteps(grid).size.printObject()
-        measureTime {
-            findObstructions(grid).printObject()
-        }.inWholeMilliseconds.printObject()
+        val visitedPoints = findSteps(grid)
+        visitedPoints.size.printObject()
+        findObstructions(grid, visitedPoints).printObject()
     }
 
     fun findSteps(grid: Grid): Set<Point> {
@@ -40,9 +39,8 @@ object Day06 {
         return visited
     }
 
-    fun findObstructions(grid: Grid): Int {
+    fun findObstructions(grid: Grid, visitedPoints: Set<Point>): Int {
         var total = 0
-        val visitedPoints = findSteps(grid)
         val allObstructions = calculateAllObstructions(grid, visitedPoints)
         allObstructions.forEach { obstruction ->
             grid.setTemporaryObstacle(obstruction)
@@ -73,6 +71,7 @@ object Day06 {
             row += direction.rowDir
             col += direction.colDir
         }
+
         return false
     }
 
