@@ -13,7 +13,7 @@ object Day02 {
                 Day02Report(textReports.map { it.toInt() })
             )
         }
-        getCompletelySafeReports(reports).println()
+        getCompletelySafeReports(reports).printObject()
         val quadraticDuration = measureTime {
             reports.forEach { report ->
                 isPartiallySafeQuadratic(report)
@@ -26,7 +26,7 @@ object Day02 {
         }
         println("Quadratic: ${quadraticDuration.inWholeNanoseconds}")
         println("Linear: ${linearDuration.inWholeNanoseconds}")
-        getPartiallySafeReports(reports).println()
+        getPartiallySafeReports(reports).printObject()
     }
 
     fun getCompletelySafeReports(reports: List<Day02Report>): Int {

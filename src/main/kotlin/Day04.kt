@@ -3,8 +3,8 @@ object Day04 {
     @JvmStatic
     fun main(args: Array<String>) {
         val testInput = readText("day04.txt")
-        findXmas(testInput).println()
-        findXmasCross(testInput).println()
+        findXmas(testInput).printObject()
+        findXmasCross(testInput).printObject()
     }
 
     fun findXmas(lines: List<String>): Int {

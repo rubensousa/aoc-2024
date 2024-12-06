@@ -21,17 +21,17 @@ object Day05 {
         }
 
         // 4790, 6ms
-        getMiddleSum(rules, updates).println()
+        getMiddleSum(rules, updates).printObject()
 
         // 6319, 27ms
         measureTime {
-            getMiddleSumPart2(rules, updates).println()
-        }.inWholeNanoseconds.println()
+            getMiddleSumPart2(rules, updates).printObject()
+        }.inWholeNanoseconds.printObject()
 
         // 6319, 5ms
         measureTime {
-            getMiddleSumPart2Sort(rules, updates).println()
-        }.inWholeNanoseconds.println()
+            getMiddleSumPart2Sort(rules, updates).printObject()
+        }.inWholeNanoseconds.printObject()
     }
 
     fun getMiddleSum(rules: Rules, updates: List<Update>): Int {

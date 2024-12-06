@@ -12,8 +12,8 @@ object Day01 {
             list1.add(parts[0].toInt())
             list2.add(parts[1].toInt())
         }
-        findListDiffSum(list1, list2).println()
-        findListSimilarity(list1, list2).println()
+        findListDiffSum(list1, list2).printObject()
+        findListSimilarity(list1, list2).printObject()
     }
 
     fun findListDiffSum(list1: List<Int>, list2: List<Int>): Int {

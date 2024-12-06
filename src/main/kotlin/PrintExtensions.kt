@@ -1,1 +1,1 @@
-fun Any?.println() = println(this)
+fun Any?.printObject() = println(this)

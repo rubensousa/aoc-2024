@@ -8,8 +8,8 @@ object Day03 {
     fun main(args: Array<String>) {
         val testInput = readLine("day03.txt")
         val operations = extractOperations(testInput)
-        calculateMultiplicationSum(operations).println()
-        calculateMultiplicationSum(extractEnabledOperations(testInput)).println()
+        calculateMultiplicationSum(operations).printObject()
+        calculateMultiplicationSum(extractEnabledOperations(testInput)).printObject()
     }
 
     fun calculateMultiplicationSum(multiplications: List<Multiplication>): Long {
