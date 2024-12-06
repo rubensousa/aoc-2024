@@ -1,3 +1,5 @@
+import kotlin.time.measureTime
+
 object Day06 {
 
     @JvmStatic
@@ -9,11 +11,13 @@ object Day06 {
             grid.add(line)
         }
 
-        findSteps(grid).printObject()
-        findObstructions(grid).printObject()
+        findSteps(grid).size.printObject()
+        measureTime {
+            findObstructions(grid).printObject()
+        }.inWholeMilliseconds.printObject()
     }
 
-    fun findSteps(grid: Grid): Int {
+    fun findSteps(grid: Grid): Set<Point> {
         val visited = mutableSetOf<Point>()
         val startPoint = grid.getStartPoint()
 
@@ -33,7 +37,7 @@ object Day06 {
             col += direction.colDir
         }
 
-        return visited.size
+        return visited
     }
 
     fun findObstructions(grid: Grid): Int {
@@ -75,10 +79,14 @@ object Day06 {
 
     private fun calculateAllObstructions(grid: Grid): Set<Point> {
         val obstructions = mutableSetOf<Point>()
+        val visitedPoints = findSteps(grid)
         for (r in 0 until grid.getLastRow() + 1) {
             for (c in 0 until grid.getLastColumn() + 1) {
                 if (grid.hasPath(r, c)) {
-                    obstructions.add(Point(r, c))
+                    val point = Point(r, c)
+                    if (visitedPoints.contains(point)) {
+                        obstructions.add(point)
+                    }
                 }
             }
         }
