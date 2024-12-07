@@ -4,35 +4,32 @@ import org.junit.Test
 class Day07Test {
 
     @Test
-    fun `check calculation sum in order`() {
+    fun `check simple equations`() {
+        val operations = setOf(
+            Day07.Operation.ADDITION,
+            Day07.Operation.MULTIPLICATION
+        )
         assertThat(
-            Day07.getCalculationInOrder(
-                numbers = listOf(1L, 2L),
-                operations = listOf(Day07.Operation.ADD)
+            Day07.getValidEquationsRecursiveDfs(
+                equations = listOf(
+                    Day07.Equation(
+                        result = 3L,
+                        fields = listOf(1L, 2L)
+                    )
+                ),
+                supportedOperations = operations
             )
-        ).isEqualTo(3)
+        ).isEqualTo(3L)
 
         assertThat(
-            Day07.getCalculationInOrder(
-                numbers = listOf(1L, 2L),
-                operations = listOf(Day07.Operation.MULTIPLY)
-            )
-        ).isEqualTo(2)
-
-        assertThat(
-            Day07.getCalculationInOrder(
-                numbers = listOf(1L, 2L, 5L),
-                operations = listOf(Day07.Operation.ADD, Day07.Operation.MULTIPLY)
-            )
-        ).isEqualTo(15)
-
-        assertThat(
-            Day07.getCalculationInOrder(
-                numbers = listOf(1L, 2L, 5L, 1L, 2L, 2L),
-                operations = listOf(
-                    Day07.Operation.ADD, Day07.Operation.MULTIPLY, Day07.Operation.ADD, Day07.Operation.MULTIPLY,
-                    Day07.Operation.ADD
-                )
+            Day07.getValidEquationsRecursiveDfs(
+                equations = listOf(
+                    Day07.Equation(
+                        result = 34,
+                        fields = listOf(1L, 2L, 5L, 1L, 2L, 2L)
+                    )
+                ),
+                supportedOperations = operations
             )
         ).isEqualTo(34)
     }

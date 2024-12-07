@@ -20,7 +20,7 @@ object Day07 {
         measureTime {
             getValidEquationsRecursiveDfs(
                 equations = equations,
-                supportedOperations = setOf(Operation.ADD, Operation.MULTIPLY)
+                supportedOperations = setOf(Operation.ADDITION, Operation.MULTIPLICATION)
             ).printObject()
         }.inWholeMilliseconds.printObject()
 
@@ -28,12 +28,12 @@ object Day07 {
         measureTime {
             getValidEquationsRecursiveDfs(
                 equations = equations,
-                supportedOperations = setOf(Operation.ADD, Operation.MULTIPLY, Operation.CONCATENATION)
+                supportedOperations = setOf(Operation.ADDITION, Operation.MULTIPLICATION, Operation.CONCATENATION)
             ).printObject()
         }.inWholeMilliseconds.printObject()
     }
 
-    private fun getValidEquationsRecursiveDfs(
+    fun getValidEquationsRecursiveDfs(
         equations: List<Equation>,
         supportedOperations: Set<Operation>
     ): Long {
@@ -73,13 +73,14 @@ object Day07 {
         operation: Operation
     ): Long {
         return when (operation) {
-            Operation.ADD -> currentResult + nextNumber
-            Operation.MULTIPLY -> currentResult * nextNumber
+            Operation.ADDITION -> currentResult + nextNumber
+            Operation.MULTIPLICATION -> currentResult * nextNumber
             Operation.CONCATENATION -> {
                 val exponent = getDigits(nextNumber)
                 val base = 10.0.pow(exponent.toDouble()).toLong()
                 currentResult * base + nextNumber
             }
+
             Operation.DIVISION -> currentResult / nextNumber
             Operation.SUBTRACTION -> currentResult - nextNumber
         }
@@ -97,8 +98,8 @@ object Day07 {
 
     data class Equation(val result: Long, val fields: List<Long>)
     enum class Operation {
-        ADD,
-        MULTIPLY,
+        ADDITION,
+        MULTIPLICATION,
         CONCATENATION,
         DIVISION,
         SUBTRACTION
