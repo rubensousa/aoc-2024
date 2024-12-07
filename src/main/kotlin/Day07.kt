@@ -80,6 +80,8 @@ object Day07 {
                 val base = 10.0.pow(exponent.toDouble()).toLong()
                 currentResult * base + nextNumber
             }
+            Operation.DIVISION -> currentResult / nextNumber
+            Operation.SUBTRACTION -> currentResult - nextNumber
         }
     }
 
@@ -97,7 +99,9 @@ object Day07 {
     enum class Operation {
         ADD,
         MULTIPLY,
-        CONCATENATION
+        CONCATENATION,
+        DIVISION,
+        SUBTRACTION
     }
 
 }
