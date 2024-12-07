@@ -1,3 +1,5 @@
+import kotlin.math.pow
+
 object Day07 {
 
     @JvmStatic
@@ -13,29 +15,43 @@ object Day07 {
                 )
             )
         }
-        getValidEquationsSum(equations).printObject()
+        // 66343330034722
+        getValidEquationsSum(
+            equations = equations,
+            permutationCalculator = { equation -> getPermutationsPart1(equation) },
+            calculator = { numbers, permutation -> getCalculationInOrder(numbers, permutation) }
+        ).printObject()
+        // 637696070419031
+        getValidEquationsSum(
+            equations = equations,
+            permutationCalculator = { equation -> getPermutationsPart2(equation) },
+            calculator = { numbers, permutation -> getCalculationWithConcatenation(numbers, permutation) }
+        ).printObject()
     }
 
-    // 66343330034722
-    private fun getValidEquationsSum(equations: List<Equation>): Long {
+    private fun getValidEquationsSum(
+        equations: List<Equation>,
+        permutationCalculator: (Equation) -> List<List<Operation>>,
+        calculator: (List<Long>, List<Operation>) -> Long
+    ): Long {
         var sum = 0L
         equations.forEach { equation ->
-            if (isValid(equation)) {
+            val permutations = permutationCalculator(equation)
+            var isValid = false
+            var i = 0
+            while (i < permutations.size) {
+                val result = calculator(equation.fields, permutations[i])
+                if (result == equation.result) {
+                    isValid = true
+                    break
+                }
+                i++
+            }
+            if (isValid) {
                 sum += equation.result
             }
         }
         return sum
-    }
-
-    private fun isValid(equation: Equation): Boolean {
-        val operationPermutations = getPermutations(size = equation.fields.size - 1)
-        operationPermutations.forEach { permutation ->
-            val result = getCalculationInOrder(equation.fields, permutation)
-            if (result == equation.result) {
-                return true
-            }
-        }
-        return false
     }
 
     fun getCalculationInOrder(numbers: List<Long>, operations: List<Operation>): Long {
@@ -52,6 +68,7 @@ object Day07 {
             result = when (operation) {
                 Operation.ADD -> currentValue + numbers[i + 1]
                 Operation.MULTIPLY -> currentValue * numbers[i + 1]
+                Operation.CONCATENATION -> result
             }
             operationIndex++
             i++
@@ -59,37 +76,78 @@ object Day07 {
         return result
     }
 
-    fun getCalculationWithRules(numbers: List<Long>, operations: List<Operation>): Long {
-        val expression = mutableListOf<Long>()
-        numbers.forEach { number ->
-            expression.add(number)
-        }
-        operations.forEachIndexed { index, operation ->
-            if (operation == Operation.MULTIPLY) {
-                val multiplication = numbers[index] * numbers[index + 1]
-                expression[index + 1] = 0
-                expression[index] = multiplication
+    fun getCalculationWithConcatenation(numbers: List<Long>, operations: List<Operation>): Long {
+        var result = 0L
+        var i = 0
+        var operationIndex = 0
+        while (i < numbers.size - 1) {
+            val operation = operations[operationIndex]
+            val currentValue = if (i == 0) {
+                numbers[0]
+            } else {
+                result
             }
+            result = when (operation) {
+                Operation.ADD -> currentValue + numbers[i + 1]
+                Operation.MULTIPLY -> currentValue * numbers[i + 1]
+                Operation.CONCATENATION -> {
+                    val exponent = numbers[i + 1].toString().length
+                    val base = 10.0.pow(exponent.toDouble()).toLong()
+                    currentValue * base + numbers[i + 1]
+                }
+
+            }
+            operationIndex++
+            i++
         }
-        return expression.sum()
+        return result
     }
 
     data class Equation(val result: Long, val fields: List<Long>)
 
-    private fun getPermutations(size: Int): List<List<Operation>> {
+    private fun getPermutationsPart1(equation: Equation): List<List<Operation>> {
         val output = mutableListOf<MutableList<Operation>>()
         Operation.entries.forEach { operation ->
             val firstList = mutableListOf<Operation>()
             firstList.add(operation)
             output.add(firstList)
         }
-        repeat(size - 1) {
-            permutations(output)
+        repeat(equation.fields.size - 2) {
+            permutationsPart1(output)
         }
         return output
     }
 
-    private fun permutations(output: MutableList<MutableList<Operation>>) {
+    private fun getPermutationsPart2(equation: Equation): List<List<Operation>> {
+        val output = mutableListOf<MutableList<Operation>>()
+        Operation.entries.forEach { operation ->
+            val firstList = mutableListOf<Operation>()
+            firstList.add(operation)
+            output.add(firstList)
+        }
+        repeat(equation.fields.size - 2) {
+            permutationsPart2(output)
+        }
+        return output
+    }
+
+    private fun permutationsPart1(output: MutableList<MutableList<Operation>>) {
+        val newLists = mutableListOf<MutableList<Operation>>()
+        output.forEach { list ->
+            val newList = mutableListOf<Operation>()
+            newList.addAll(list)
+            newList.add(Operation.ADD)
+            newLists.add(newList)
+            val newList2 = mutableListOf<Operation>()
+            newList2.addAll(list)
+            newList2.add(Operation.MULTIPLY)
+            newLists.add(newList2)
+        }
+        output.clear()
+        output.addAll(newLists)
+    }
+
+    private fun permutationsPart2(output: MutableList<MutableList<Operation>>) {
         val newLists = mutableListOf<MutableList<Operation>>()
         output.forEach { list ->
             Operation.entries.forEach { operation ->
@@ -105,6 +163,8 @@ object Day07 {
 
     enum class Operation {
         ADD,
-        MULTIPLY
+        MULTIPLY,
+        CONCATENATION
     }
+
 }
