@@ -44,9 +44,9 @@ class Day09Test {
         val fourthFileSize = 1
         // 001.22.3 -> 001322..
         val input = "${firstFileSize}0${secondFileSize}1${thirdFileSize}1${fourthFileSize}"
-        val filesystem = Day09.buildFileSystem(input)
+        val filesystem = Day09.buildTreeFileSystem(input)
         filesystem.print()
-        filesystem.moveContinuousFilesToStart()
+        filesystem.moveFiles()
         filesystem.print()
 
         assertThat(filesystem.checksum()).isEqualTo(2 * 1 + 3 * 3 + 4 * 2 + 5 * 2)
@@ -55,9 +55,9 @@ class Day09Test {
     @Test
     fun `example with continuous files`() {
         val input = "2333133121414131402"
-        val filesystem = Day09.buildFileSystem(input)
+        val filesystem = Day09.buildTreeFileSystem(input)
         filesystem.print()
-        filesystem.moveContinuousFilesToStart()
+        filesystem.moveFiles()
         filesystem.print()
 
         assertThat(filesystem.checksum()).isEqualTo(2858)
@@ -66,9 +66,9 @@ class Day09Test {
     @Test
     fun `example with immediate swap`() {
         val input = "1010101"
-        val filesystem = Day09.buildFileSystem(input)
+        val filesystem = Day09.buildTreeFileSystem(input)
         filesystem.print()
-        filesystem.moveContinuousFilesToStart()
+        filesystem.moveFiles()
         filesystem.print()
 
         assertThat(filesystem.checksum()).isEqualTo(14)
@@ -77,20 +77,20 @@ class Day09Test {
     @Test
     fun `large example with immediate swap`() {
         val input = "1662"
-        val filesystem = Day09.buildFileSystem(input)
+        val filesystem = Day09.buildTreeFileSystem(input)
         filesystem.print()
-        filesystem.moveContinuousFilesToStart()
+        filesystem.moveFiles()
         filesystem.print()
 
         assertThat(filesystem.checksum()).isEqualTo(21)
     }
 
     @Test
-    fun `nothing that fits does not change`() {
+    fun `consecutive moves`() {
         val input = "121212121"
-        val filesystem = Day09.buildFileSystem(input)
+        val filesystem = Day09.buildTreeFileSystem(input)
         filesystem.print()
-        filesystem.moveContinuousFilesToStart()
+        filesystem.moveFiles()
         filesystem.print()
 
         assertThat(filesystem.checksum()).isEqualTo(21)

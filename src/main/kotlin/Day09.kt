@@ -1,3 +1,6 @@
+import java.util.*
+import kotlin.time.measureTime
+
 object Day09 {
 
     @JvmStatic
@@ -5,20 +8,31 @@ object Day09 {
         val testInput = readLine("day09.txt")
 
         // 6390180901651
-        val individualFileSystem = buildIndividualFileSystem(testInput)
-        moveFilesToStart(individualFileSystem)
-        checksumPart1(individualFileSystem).printObject()
+        // 14 ms
+        measureTime {
+            val individualFileSystem = buildIndividualFileSystem(testInput)
+            moveFilesToStart(individualFileSystem)
+            checksumPart1(individualFileSystem).printObject()
+        }.inWholeMilliseconds.printObject()
 
         // 6412390114238
-        val fileSystem = buildFileSystem(testInput)
-        fileSystem.moveContinuousFilesToStart()
-        fileSystem.checksum().printObject()
+        // 250ms
+        measureTime {
+            val fileSystem = buildFileSystem(testInput)
+            fileSystem.moveContinuousFilesToStart()
+            fileSystem.checksum().printObject()
+        }.inWholeMilliseconds.printObject()
+
+        measureTime {
+            val fileSystem = buildTreeFileSystem(testInput)
+            fileSystem.moveFiles()
+            fileSystem.checksum().printObject()
+        }.inWholeMilliseconds.printObject()
     }
 
     fun buildFileSystem(input: String): FileSystem {
         var fileId = 0
         val files = mutableListOf<FileSystemBlock.FileChunk>()
-        var head: FileSystemBlock? = null
         var tail: FileSystemBlock? = null
         input.forEachIndexed { index, char ->
             val size = char.digitToInt()
@@ -30,19 +44,45 @@ object Day09 {
             } else {
                 FileSystemBlock.SpaceChunk(size)
             }
-            if (index == 0) {
-                head = block
-            }
+            block.index = index
             tail?.next = block
             block.prev = tail
-            tail = block.last
+            tail = block
         }
-        return FileSystem(
-            firstBlock = head!!,
-            lastBlock = tail!!,
-            allFiles = files
-        )
+        return FileSystem(files = files, TreeMap())
     }
+
+    fun buildTreeFileSystem(input: String): FileSystem {
+        var fileId = 0
+        val files = mutableListOf<FileSystemBlock.FileChunk>()
+        val spaceMap = TreeMap<Int, AvailableSpace>()
+        var tail: FileSystemBlock? = null
+        input.forEachIndexed { index, char ->
+            val size = char.digitToInt()
+            val block = if (index % 2 == 0) {
+                val fileBlock = FileSystemBlock.FileChunk(fileId, size)
+                fileId++
+                files.add(fileBlock)
+                fileBlock
+            } else {
+                val spaceBlock = FileSystemBlock.SpaceChunk(size)
+                val availableSpace = spaceMap.getOrPut(size) { AvailableSpace(size, PriorityQueue()) }
+                spaceBlock.index = index
+                availableSpace.nodes.offer(spaceBlock)
+                spaceBlock
+            }
+            block.index = index
+            tail?.next = block
+            block.prev = tail
+            tail = block
+        }
+        return FileSystem(files = files, spaceMap)
+    }
+
+    data class AvailableSpace(
+        val size: Int,
+        val nodes: PriorityQueue<FileSystemBlock.SpaceChunk>
+    )
 
     sealed class FileSystemBlock {
 
@@ -50,6 +90,7 @@ object Day09 {
         var next: FileSystemBlock? = null
         var first: FileSystemBlock? = null
         var last: FileSystemBlock? = null
+        var index = 0
 
         open val size: Int = 1
 
@@ -62,27 +103,56 @@ object Day09 {
             override fun toString(): String = "FileChunk(id = $id, size = $size)"
         }
 
-        data class SpaceChunk(override val size: Int) : FileSystemBlock() {
+        data class SpaceChunk(override val size: Int) : FileSystemBlock(), Comparable<SpaceChunk> {
             init {
                 this.first = this
                 this.last = this
             }
+
+            override fun compareTo(other: SpaceChunk): Int {
+                return index.compareTo(other.index)
+            }
+
             override fun toString(): String = "SpaceChunk($size)"
+
         }
     }
 
     data class FileSystem(
-        val firstBlock: FileSystemBlock,
-        val lastBlock: FileSystemBlock,
-        val allFiles: List<FileSystemBlock.FileChunk>
+        val files: List<FileSystemBlock.FileChunk>,
+        val spaceMap: TreeMap<Int, AvailableSpace>,
     ) {
 
         fun moveContinuousFilesToStart() {
-            for (i in allFiles.indices) {
-                val file = allFiles[allFiles.size - 1 - i]
+            for (i in files.indices) {
+                val file = files[files.size - 1 - i]
                 val availableSpace = findFreeSpaceBlock(file) ?: continue
                 moveFile(file, availableSpace)
             }
+        }
+
+        fun moveFiles() {
+            for (i in files.indices) {
+                val file = files[files.size - 1 - i]
+                val availableSpace = findFirstAvailableSpace(file) ?: continue
+                moveFile(file, availableSpace)
+            }
+        }
+
+        private fun findFirstAvailableSpace(file: FileSystemBlock.FileChunk): FileSystemBlock.SpaceChunk? {
+            var spaceMapEntry = spaceMap.ceilingEntry(file.size) ?: return null
+            var space = spaceMapEntry.value.nodes.peek()
+            while (space != null && space.index >= file.index) {
+                spaceMapEntry = spaceMap.higherEntry(spaceMapEntry.key)
+                space = spaceMapEntry?.value?.nodes?.peek()
+            }
+            if (space != null) {
+                spaceMapEntry.value?.nodes?.poll()
+                if (spaceMapEntry.value.nodes.isEmpty()) {
+                    spaceMap.remove(spaceMapEntry.key)
+                }
+            }
+            return space
         }
 
         private fun findFreeSpaceBlock(file: FileSystemBlock.FileChunk): FileSystemBlock.SpaceChunk? {
@@ -108,7 +178,6 @@ object Day09 {
 
                 file.prev = spacePrev
                 file.next = space
-
                 space.next = fileNext
                 fileNext?.prev = space
             } else {
@@ -125,7 +194,7 @@ object Day09 {
         }
 
         private fun moveFile(file: FileSystemBlock.FileChunk, spaceBlock: FileSystemBlock.SpaceChunk): Boolean {
-            if (file.size > spaceBlock.size) {
+            if (file.size > spaceBlock.size || file.index < spaceBlock.index) {
                 return false
             }
 
@@ -145,6 +214,14 @@ object Day09 {
                 // Space is larger, so we need to split it
                 val newSpaceBlockBefore = FileSystemBlock.SpaceChunk(size = spaceBlock.size - file.size)
                 val newSpaceAfter = FileSystemBlock.SpaceChunk(size = file.size)
+                newSpaceBlockBefore.index = spaceBlock.index + 1
+                newSpaceAfter.index = file.index
+                spaceMap.getOrPut(newSpaceBlockBefore.size) {
+                    AvailableSpace(newSpaceBlockBefore.size, nodes = PriorityQueue())
+                }.nodes.offer(newSpaceBlockBefore)
+                spaceMap.getOrPut(newSpaceAfter.size) {
+                    AvailableSpace(newSpaceAfter.size, nodes = PriorityQueue())
+                }.nodes.offer(newSpaceAfter)
 
                 // First connection
                 spaceBlockPrevious?.next = file
@@ -160,13 +237,17 @@ object Day09 {
                 newSpaceAfter.next = fileNext
                 fileNext?.prev = newSpaceAfter
             }
+
+            val index = file.index
+            file.index = spaceBlock.index
+            spaceBlock.index = index
             return true
         }
 
         fun checksum(): Long {
             var sum = 0L
             var index = 0
-            var block: FileSystemBlock? = firstBlock
+            var block: FileSystemBlock? = files.first()
             while (block != null) {
                 val content = block
                 if (content is FileSystemBlock.FileChunk) {
@@ -184,7 +265,7 @@ object Day09 {
 
         fun print() {
             val stringBuilder = StringBuilder()
-            var currentBlock: FileSystemBlock? = firstBlock
+            var currentBlock: FileSystemBlock? = files.first()
             while (currentBlock != null) {
                 val block = currentBlock
                 if (block is FileSystemBlock.FileChunk) {
