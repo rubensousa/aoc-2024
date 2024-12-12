@@ -57,7 +57,7 @@ object Day12 {
                             )
                             totals[initialPlant] = currentSize
                             visitedPlants.add(currentPlant)
-                            findNextNodes(currentState).forEach { node ->
+                            findNextNodes(currentState, visitedPlants).forEach { node ->
                                 stack.addLast(node)
                             }
                         }
@@ -98,7 +98,7 @@ object Day12 {
                             totals[initialPlant] = currentSize
                             visitedPlants.add(currentPlant)
                             plants.add(currentPlant)
-                            findNextNodes(currentState).forEach { node ->
+                            findNextNodes(currentState, visitedPlants).forEach { node ->
                                 stack.addLast(node)
                             }
                         }
@@ -111,7 +111,7 @@ object Day12 {
             return totals.values.sumOf { it.area * it.sides }
         }
 
-        private fun findNextNodes(searchState: SearchState): List<SearchState> {
+        private fun findNextNodes(searchState: SearchState, visitedPlants: Set<Plant>): List<SearchState> {
             val nextNodes = mutableListOf<SearchState>()
             val row = searchState.currentPlant.row
             val col = searchState.currentPlant.col
@@ -121,7 +121,7 @@ object Day12 {
                 val nextCol = col + dir.col
                 if (nextRow >= 0 && nextRow < grid.size && nextCol >= 0 && nextCol < columnSize) {
                     val nextPlant = grid[nextRow][nextCol]
-                    if (nextPlant.char == char) {
+                    if (nextPlant.char == char && !visitedPlants.contains(nextPlant)) {
                         nextNodes.add(
                             searchState.copy(
                                 currentPlant = nextPlant,
@@ -174,9 +174,13 @@ object Day12 {
         }
 
         private fun calculateSides(visitedPlants: Set<Plant>): Int {
+            if (visitedPlants.size == 1) {
+                return 4
+            }
             var total = 0
             val coordinates = listOf(0 to 0, 0 to 1, 1 to 0, 1 to 1)
             val points = mutableMapOf<Point, Int>()
+            val plantsPerPoint = mutableMapOf<Point, MutableList<Plant>>()
             coordinates.forEach { direction ->
                 visitedPlants.forEach { plant ->
                     val point = Point(
@@ -184,12 +188,25 @@ object Day12 {
                         plant.col + direction.second
                     )
                     val currentCount = points.getOrPut(point) { 0 }
+                    val plantsWithSamePoint = plantsPerPoint.getOrPut(point) {
+                        mutableListOf()
+                    }
+                    plantsWithSamePoint.add(plant)
                     points[point] = currentCount + 1
                 }
             }
-            points.values.forEach { count ->
+            points.forEach { entry ->
+                val point = entry.key
+                val count = entry.value
                 if (count == 3 || count == 1) {
                     total++
+                } else if (count == 2) {
+                    val plantsAtSamePoint = plantsPerPoint[point]!!
+                    val firstPlant = plantsAtSamePoint[0]
+                    val secondPlant = plantsAtSamePoint[1]
+                    if (firstPlant.row != secondPlant.row && firstPlant.col != secondPlant.col) {
+                        total += 2
+                    }
                 }
             }
             return total
