@@ -10,7 +10,7 @@ object Day12 {
         // 1433460
         grid.getTotalFencePrice().printObject()
 
-        // 855082 -> too low
+        // 855082
         grid.getTotalFencePriceSide().printObject()
     }
 
