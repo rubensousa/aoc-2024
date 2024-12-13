@@ -7,7 +7,7 @@ object Day13 {
     @JvmStatic
     fun main(args: Array<String>) {
         val testInput = readText("day13.txt")
-        var lines = testInput.size
+        val lines = testInput.size
         val scenarios = mutableListOf<Scenario>()
         var index = 0
         while (index < lines) {
@@ -119,9 +119,9 @@ object Day13 {
         }
         val a = aResult.roundToLong()
         val b = bResult.roundToLong()
-        val finalX = a * scenario.buttonA.x + b * scenario.buttonB.x
-        val finalY = a * scenario.buttonA.y + b * scenario.buttonB.y
-        return if (finalX == scenario.prize.x && finalY == scenario.prize.y) {
+        val finalX = a * ax + b * bx
+        val finalY = a * ay + b * by
+        return if (finalX == px && finalY == py) {
             a * 3 + b
         } else {
             0L
