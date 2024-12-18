@@ -47,7 +47,7 @@ object Day18 {
             testableBlocks.forEach { block ->
                 grid.addWall(block)
             }
-            if (grid.getShortestPath() == VertexInfo.INFINITY) {
+            if (grid.getShortestPath() == VertexState.INFINITY_DISTANCE) {
                 right = currentSize - 1
             } else {
                 left = currentSize + 1
@@ -82,13 +82,13 @@ object Day18 {
 
     }
 
-    data class VertexInfo(val vertex: Point, val minWeight: Int) : Comparable<VertexInfo> {
+    data class VertexState(val vertex: Point, val distance: Int) : Comparable<VertexState> {
         companion object {
-            const val INFINITY = Integer.MAX_VALUE
+            const val INFINITY_DISTANCE = Integer.MAX_VALUE
         }
 
-        override fun compareTo(other: VertexInfo): Int {
-            return minWeight.compareTo(other.minWeight)
+        override fun compareTo(other: VertexState): Int {
+            return distance.compareTo(other.distance)
         }
     }
 
@@ -131,53 +131,53 @@ object Day18 {
         }
 
         fun findDistances(graph: Graph): Map<Point, Int> {
-            val weights = mutableMapOf<Point, Int>()
+            val distances = mutableMapOf<Point, Int>()
             val visited = LinkedHashSet<Point>()
-            val vertexes = graph.getAllNodes()
+            val nodes = graph.getAllNodes()
 
-            vertexes.forEach { node ->
-                weights[node.point] = VertexInfo.INFINITY
+            nodes.forEach { node ->
+                distances[node.point] = VertexState.INFINITY_DISTANCE
             }
 
-            weights[startLocation] = 0
+            distances[startLocation] = 0
 
-            while (visited.size != vertexes.size) {
-                val vertexInfo = findVertexNotVisitedWithMinWeight(weights, visited)
-                if (vertexInfo.minWeight == VertexInfo.INFINITY) {
+            while (visited.size != nodes.size) {
+                val vertexInfo = findVertexNotVisitedWithMinWeight(distances, visited)
+                if (vertexInfo.distance == VertexState.INFINITY_DISTANCE) {
                     break
                 }
                 visited.add(vertexInfo.vertex)
                 graph.getNode(vertexInfo.vertex).getNeighbours().forEach { neighbour ->
                     if (!visited.contains(neighbour.point)) {
-                        val newWeight = vertexInfo.minWeight + 1
-                        val currentWeight = weights[neighbour.point]!!
-                        if (newWeight < currentWeight) {
-                            weights[neighbour.point] = newWeight
+                        val newDistance = vertexInfo.distance + 1
+                        val currentDistance = distances[neighbour.point]!!
+                        if (newDistance < currentDistance) {
+                            distances[neighbour.point] = newDistance
                         }
                     }
                 }
             }
-
-            return weights
+            return distances
         }
 
         fun findVertexNotVisitedWithMinWeight(
-            weights: Map<Point, Int>,
+            distances: Map<Point, Int>,
             visited: Set<Point>
-        ): VertexInfo {
-            var currentWeight = VertexInfo.INFINITY
+        ): VertexState {
+            var currentDistance = VertexState.INFINITY_DISTANCE
             var vertex = startLocation
-            weights.forEach { (point, weight) ->
-                if (!visited.contains(point) && weight <= currentWeight) {
+            distances.forEach { (point, distance) ->
+                if (!visited.contains(point) && distance <= currentDistance) {
                     vertex = point
-                    currentWeight = weight
+                    currentDistance = distance
                 }
             }
-            return VertexInfo(vertex, currentWeight)
+            return VertexState(vertex, currentDistance)
         }
 
         fun isWithinBounds(point: Point): Boolean {
-            return point.y >= 0 && point.y < rows.size && point.x >= 0 && point.x < rows[0].size
+            return point.y >= 0 && point.y < rows.size
+                    && point.x >= 0 && point.x < rows[0].size
                     && getElement(point) != Element.WALL
         }
 
@@ -190,8 +190,8 @@ object Day18 {
             val stringBuilder = StringBuilder()
             rows.forEachIndexed { y, row ->
                 row.forEachIndexed { x, element ->
-                    val point = Point(y = y, x= x)
-                    if(visited.contains(point)) {
+                    val point = Point(y = y, x = x)
+                    if (visited.contains(point)) {
                         stringBuilder.append(Element.PATH.char)
                     } else {
                         stringBuilder.append(element.char)
