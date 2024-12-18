@@ -1,4 +1,4 @@
-import grid.IntPoint
+import grid.Point
 import kotlin.math.abs
 
 object Day14 {
@@ -50,37 +50,37 @@ object Day14 {
 
     private fun dfs(counts: List<List<Int>>): Int {
         var max = 0
-        val visited = mutableSetOf<IntPoint>()
+        val visited = mutableSetOf<Point>()
         for (i in counts.indices) {
             val row = counts[i]
             for (j in row.indices) {
                 if (row[j] > 0) {
-                    val point = IntPoint(j, i)
+                    val point = Point(j, i)
                     if (!visited.contains(point)) {
                         var count = 0
-                        val stack = ArrayDeque<IntPoint>()
+                        val stack = ArrayDeque<Point>()
                         stack.addFirst(point)
                         while (stack.isNotEmpty()) {
                             val currentPoint = stack.removeFirst()
                             visited.add(currentPoint)
                             if (currentPoint.x + 1 < row.size && row[currentPoint.x + 1] > 0) {
-                                if (!visited.contains(IntPoint(currentPoint.x + 1, currentPoint.y))) {
-                                    stack.addFirst(IntPoint(currentPoint.x + 1, currentPoint.y))
+                                if (!visited.contains(Point(currentPoint.x + 1, currentPoint.y))) {
+                                    stack.addFirst(Point(currentPoint.x + 1, currentPoint.y))
                                 }
                             }
                             if (currentPoint.y + 1 < counts.size && counts[currentPoint.y + 1][currentPoint.x] > 0) {
-                                if (!visited.contains(IntPoint(currentPoint.x, currentPoint.y + 1))) {
-                                    stack.addFirst(IntPoint(currentPoint.x, currentPoint.y + 1))
+                                if (!visited.contains(Point(currentPoint.x, currentPoint.y + 1))) {
+                                    stack.addFirst(Point(currentPoint.x, currentPoint.y + 1))
                                 }
                             }
                             if (currentPoint.x - 1 >= 0  && row[currentPoint.x - 1] > 0) {
-                                if (!visited.contains(IntPoint(currentPoint.x - 1, currentPoint.y))) {
-                                    stack.addFirst(IntPoint(currentPoint.x - 1, currentPoint.y))
+                                if (!visited.contains(Point(currentPoint.x - 1, currentPoint.y))) {
+                                    stack.addFirst(Point(currentPoint.x - 1, currentPoint.y))
                                 }
                             }
                             if (currentPoint.y - 1 >= 0  && counts[currentPoint.y - 1][currentPoint.x] > 0) {
-                                if (!visited.contains(IntPoint(currentPoint.x, currentPoint.y - 1))) {
-                                    stack.addFirst(IntPoint(currentPoint.x, currentPoint.y - 1))
+                                if (!visited.contains(Point(currentPoint.x, currentPoint.y - 1))) {
+                                    stack.addFirst(Point(currentPoint.x, currentPoint.y - 1))
                                 }
                             }
                             count++

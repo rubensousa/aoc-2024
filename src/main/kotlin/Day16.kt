@@ -1,5 +1,5 @@
 import grid.Direction
-import grid.IntPoint
+import grid.Point
 import kotlin.math.min
 import kotlin.system.measureTimeMillis
 
@@ -35,18 +35,18 @@ object Day16 {
     class Part1Grid {
 
         private val rows = mutableListOf<MutableList<Element>>()
-        private var startLocation = IntPoint(0, 0)
-        private var endLocation = IntPoint(0, 0)
+        private var startLocation = Point(0, 0)
+        private var endLocation = Point(0, 0)
 
         fun addRow(line: String) {
             val row = mutableListOf<Element>()
             line.forEachIndexed { index, char ->
                 val element = parseElement(char)
                 if (element == Element.REINDEER) {
-                    startLocation = IntPoint(y = rows.size, x = index)
+                    startLocation = Point(y = rows.size, x = index)
                 }
                 if (element == Element.END) {
-                    endLocation = IntPoint(y = rows.size, x = index)
+                    endLocation = Point(y = rows.size, x = index)
                 }
                 if (element == Element.REINDEER) {
                     row.add(Element.FREE_SPACE)
@@ -60,7 +60,7 @@ object Day16 {
         fun getLowestScore(): Long {
             var min: Long = Long.MAX_VALUE
             val stack = ArrayDeque<Traversal>()
-            val scores = mutableMapOf<IntPoint, Long>()
+            val scores = mutableMapOf<Point, Long>()
             stack.addFirst(Traversal(startLocation, Direction.RIGHT, score = 0L, mutableSetOf()))
 
             while (stack.isNotEmpty()) {
@@ -97,9 +97,9 @@ object Day16 {
         fun getAllPaths(): Long {
             var min: Long = Long.MAX_VALUE
             val stack = ArrayDeque<Traversal>()
-            val directionScores = mutableMapOf<IntPoint, MutableMap<Direction, Long>>()
+            val directionScores = mutableMapOf<Point, MutableMap<Direction, Long>>()
             stack.addFirst(Traversal(startLocation, Direction.RIGHT, score = 0L, mutableSetOf()))
-            val points = mutableSetOf<IntPoint>()
+            val points = mutableSetOf<Point>()
 
             while (stack.isNotEmpty()) {
                 val traversal = stack.removeFirst()
@@ -127,7 +127,7 @@ object Day16 {
                         val currentScore = currentScoreMap.getOrPut(direction) { nextScore }
                         if (isWithinBounds(nextPoint) && nextScore <= currentScore) {
                             currentScoreMap[direction] = nextScore
-                            val newPath = LinkedHashSet<IntPoint>()
+                            val newPath = LinkedHashSet<Point>()
                             newPath.addAll(traversal.visitedPath)
                             newPath.add(nextPoint)
                             stack.addLast(
@@ -147,12 +147,12 @@ object Day16 {
             return points.size.toLong()
         }
 
-        fun isWithinBounds(point: IntPoint): Boolean {
+        fun isWithinBounds(point: Point): Boolean {
             return point.y >= 0 && point.y < rows.size && point.x >= 0 && point.x < rows[0].size
                     && getElement(point) != Element.WALL
         }
 
-        fun getElement(point: IntPoint): Element {
+        fun getElement(point: Point): Element {
             return rows.getOrNull(point.y)?.getOrNull(point.x)
                 ?: throw IllegalArgumentException("Out of bounds")
         }
@@ -180,10 +180,10 @@ object Day16 {
     }
 
     data class Traversal(
-        val currentPoint: IntPoint,
+        val currentPoint: Point,
         val direction: Direction,
         val score: Long,
-        val visitedPath: MutableSet<IntPoint>
+        val visitedPath: MutableSet<Point>
     )
 
     enum class Element(val char: Char) {

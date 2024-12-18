@@ -1,6 +1,5 @@
 import grid.Direction
-import grid.IntPoint
-import java.util.*
+import grid.Point
 import kotlin.system.measureTimeMillis
 
 
@@ -9,11 +8,11 @@ object Day18 {
     @JvmStatic
     fun main(args: Array<String>) {
         val lines = readText("day18.txt")
-        val corruptedBlocks = mutableListOf<IntPoint>()
+        val corruptedBlocks = mutableListOf<Point>()
         lines.forEach { line ->
             val pair = line.split(",")
             corruptedBlocks.add(
-                IntPoint(
+                Point(
                     x = pair[0].toInt(),
                     y = pair[1].toInt()
                 )
@@ -30,7 +29,7 @@ object Day18 {
         }.printObject()
     }
 
-    private fun part1(corruptedBlocks: List<IntPoint>) {
+    private fun part1(corruptedBlocks: List<Point>) {
         val grid = Grid(71)
         corruptedBlocks.forEach { block ->
             grid.addWall(block)
@@ -38,7 +37,7 @@ object Day18 {
         grid.getShortestPath().printObject()
     }
 
-    private fun part2(corruptedBlocks: List<IntPoint>) {
+    private fun part2(corruptedBlocks: List<Point>) {
         var left = 1024
         var right = corruptedBlocks.size
         while (left <= right) {
@@ -60,18 +59,18 @@ object Day18 {
 
     class Graph {
 
-        private val nodes = mutableMapOf<IntPoint, Node>()
+        private val nodes = mutableMapOf<Point, Node>()
 
         fun getAllNodes() = nodes.values
 
-        fun getNode(point: IntPoint): Node {
+        fun getNode(point: Point): Node {
             return nodes.getOrPut(point) { Node(point) }
         }
     }
 
-    data class Node(val point: IntPoint) {
+    data class Node(val point: Point) {
 
-        private val neighbours = mutableMapOf<IntPoint, Node>()
+        private val neighbours = mutableMapOf<Point, Node>()
 
         fun addNeighbour(node: Node) {
             neighbours[node.point] = node
@@ -83,7 +82,7 @@ object Day18 {
 
     }
 
-    data class VertexInfo(val vertex: IntPoint, val minWeight: Int) : Comparable<VertexInfo> {
+    data class VertexInfo(val vertex: Point, val minWeight: Int) : Comparable<VertexInfo> {
         companion object {
             const val INFINITY = Integer.MAX_VALUE
         }
@@ -96,10 +95,10 @@ object Day18 {
     class Grid(val size: Int) {
 
         private val rows = MutableList(size) { MutableList(size) { Element.FREE_SPACE } }
-        private val startLocation = IntPoint(0, 0)
-        private val endLocation = IntPoint(rows.size - 1, rows.size - 1)
+        private val startLocation = Point(0, 0)
+        private val endLocation = Point(rows.size - 1, rows.size - 1)
 
-        fun addWall(point: IntPoint) {
+        fun addWall(point: Point) {
             rows[point.y][point.x] = Element.WALL
         }
 
@@ -114,7 +113,7 @@ object Day18 {
             val graph = Graph()
             repeat(rows) { y ->
                 repeat(rows) { x ->
-                    val point = IntPoint(x, y)
+                    val point = Point(x, y)
                     if (isWithinBounds(point)) {
                         val node = graph.getNode(point)
                         val neighbourPoints = Direction.entries.map { direction ->
@@ -131,9 +130,9 @@ object Day18 {
             return graph
         }
 
-        fun findDistances(graph: Graph): Map<IntPoint, Int> {
-            val weights = mutableMapOf<IntPoint, Int>()
-            val visited = LinkedHashSet<IntPoint>()
+        fun findDistances(graph: Graph): Map<Point, Int> {
+            val weights = mutableMapOf<Point, Int>()
+            val visited = LinkedHashSet<Point>()
             val vertexes = graph.getAllNodes()
 
             vertexes.forEach { node ->
@@ -163,8 +162,8 @@ object Day18 {
         }
 
         fun findVertexNotVisitedWithMinWeight(
-            weights: Map<IntPoint, Int>,
-            visited: Set<IntPoint>
+            weights: Map<Point, Int>,
+            visited: Set<Point>
         ): VertexInfo {
             var currentWeight = VertexInfo.INFINITY
             var vertex = startLocation
@@ -177,14 +176,30 @@ object Day18 {
             return VertexInfo(vertex, currentWeight)
         }
 
-        fun isWithinBounds(point: IntPoint): Boolean {
+        fun isWithinBounds(point: Point): Boolean {
             return point.y >= 0 && point.y < rows.size && point.x >= 0 && point.x < rows[0].size
                     && getElement(point) != Element.WALL
         }
 
-        fun getElement(point: IntPoint): Element {
+        fun getElement(point: Point): Element {
             return rows.getOrNull(point.y)?.getOrNull(point.x)
                 ?: throw IllegalArgumentException("Out of bounds")
+        }
+
+        fun printVisited(visited: Set<Point>) {
+            val stringBuilder = StringBuilder()
+            rows.forEachIndexed { y, row ->
+                row.forEachIndexed { x, element ->
+                    val point = Point(y = y, x= x)
+                    if(visited.contains(point)) {
+                        stringBuilder.append(Element.PATH.char)
+                    } else {
+                        stringBuilder.append(element.char)
+                    }
+                }
+                stringBuilder.appendLine()
+            }
+            stringBuilder.toString().printObject()
         }
 
         override fun toString(): String {

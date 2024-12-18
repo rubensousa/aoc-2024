@@ -1,5 +1,5 @@
 import grid.Direction
-import grid.IntPoint
+import grid.Point
 import kotlin.system.measureTimeMillis
 
 object Day15 {
@@ -49,7 +49,7 @@ object Day15 {
     class Part2Grid {
 
         private val rows = mutableListOf<MutableList<Element>>()
-        private var robotLocation = IntPoint(0, 0)
+        private var robotLocation = Point(0, 0)
 
         fun getNumberOfColumns() = rows[0].size
 
@@ -60,7 +60,7 @@ object Day15 {
                     Element.ROBOT -> {
                         // Register free space in this coordinate,
                         // because the robot is on top of it
-                        robotLocation = IntPoint(y = rows.size, x = row.size)
+                        robotLocation = Point(y = rows.size, x = row.size)
                         row.add(Element.FREE_SPACE)
                         row.add(Element.FREE_SPACE)
                     }
@@ -91,7 +91,7 @@ object Day15 {
             return sum
         }
 
-        fun getEntity(point: IntPoint): Element {
+        fun getEntity(point: Point): Element {
             return rows.getOrNull(point.y)?.getOrNull(point.x)
                 ?: throw IllegalArgumentException("Out of bounds")
         }
@@ -104,7 +104,7 @@ object Day15 {
                 ?: throw IllegalArgumentException("Out of bounds")
         }
 
-        fun swap(fromPoint: IntPoint, toPoint: IntPoint) {
+        fun swap(fromPoint: Point, toPoint: Point) {
             val toEntity = getEntity(toPoint)
             val fromEntity = getEntity(fromPoint)
             rows[toPoint.y][toPoint.x] = fromEntity
@@ -112,7 +112,7 @@ object Day15 {
         }
 
         fun setRobotLocation(x: Int, y: Int) {
-            robotLocation = IntPoint(x = x, y = y)
+            robotLocation = Point(x = x, y = y)
         }
 
         fun moveRobot(direction: Direction) {
@@ -188,12 +188,12 @@ object Day15 {
 
     class BoxChunks(
         private val grid: Part2Grid,
-        private val origin: IntPoint
+        private val origin: Point
     ) {
 
-        private val levels = mutableListOf<Set<IntPoint>>()
+        private val levels = mutableListOf<Set<Point>>()
 
-        data class FillState(val level: Int, val point: IntPoint)
+        data class FillState(val level: Int, val point: Point)
 
         fun fill(direction: Direction) {
             val stack = ArrayDeque<FillState>()
@@ -203,7 +203,7 @@ object Day15 {
             } else {
                 stack.addFirst(FillState(level = 1, origin.move(Direction.RIGHT)))
             }
-            val newLevels = mutableMapOf<Int, MutableSet<IntPoint>>()
+            val newLevels = mutableMapOf<Int, MutableSet<Point>>()
             while (stack.isNotEmpty()) {
                 val state = stack.removeFirst()
                 val point = state.point
@@ -245,7 +245,7 @@ object Day15 {
                 level.forEach { point ->
                     grid.swap(
                         fromPoint = point,
-                        toPoint = IntPoint(x = point.x, y = point.y + direction.row)
+                        toPoint = Point(x = point.x, y = point.y + direction.row)
                     )
                 }
             }
@@ -290,14 +290,14 @@ object Day15 {
     class Part1Grid {
 
         private val rows = mutableListOf<MutableList<Element>>()
-        private var robotLocation = IntPoint(0, 0)
+        private var robotLocation = Point(0, 0)
 
         fun addRow(line: String) {
             val row = mutableListOf<Element>()
             line.forEachIndexed { index, char ->
                 val entity = parseEntity(char)
                 if (entity == Element.ROBOT) {
-                    robotLocation = IntPoint(y = rows.size, x = index)
+                    robotLocation = Point(y = rows.size, x = index)
                 }
                 if (entity == Element.ROBOT) {
                     // Register free space in this coordinate,
@@ -312,7 +312,7 @@ object Day15 {
 
         fun getRobotLocation() = robotLocation
 
-        fun getEntity(point: IntPoint): Element {
+        fun getEntity(point: Point): Element {
             return rows.getOrNull(point.y)?.getOrNull(point.x)
                 ?: throw IllegalArgumentException("Out of bounds")
         }
@@ -325,7 +325,7 @@ object Day15 {
                 ?: throw IllegalArgumentException("Out of bounds")
         }
 
-        fun swap(fromPoint: IntPoint, toPoint: IntPoint) {
+        fun swap(fromPoint: Point, toPoint: Point) {
             val toEntity = getEntity(toPoint)
             val fromEntity = getEntity(fromPoint)
             rows[toPoint.y][toPoint.x] = fromEntity

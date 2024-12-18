@@ -1,4 +1,4 @@
-import grid.Point
+import grid.LongPoint
 import kotlin.math.min
 import kotlin.math.roundToLong
 
@@ -136,7 +136,7 @@ object Day13 {
         }
     }
 
-    data class Scenario(val buttonA: Button, val buttonB: Button, val prize: Point)
+    data class Scenario(val buttonA: Button, val buttonB: Button, val prize: LongPoint)
 
     data class Button(val x: Long, val y: Long)
 
@@ -150,13 +150,13 @@ object Day13 {
         return Button(splits[0].toLong(), splits[1].toLong())
     }
 
-    private fun parsePrize(text: String): Point {
+    private fun parsePrize(text: String): LongPoint {
         val splits = text.replace("Prize: ", "")
             .replace("X=", "")
             .replace("Y=", "")
             .replace(",", "")
             .split(" ")
-        return Point(splits[0].toLong(), splits[1].toLong())
+        return LongPoint(splits[0].toLong(), splits[1].toLong())
     }
 
 }
