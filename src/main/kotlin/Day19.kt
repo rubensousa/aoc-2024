@@ -1,0 +1,180 @@
+import kotlin.math.max
+
+object Day19 {
+
+
+    @JvmStatic
+    fun main(args: Array<String>) {
+        val lines = readText("day19.txt")
+        val towels = mutableListOf<String>()
+        val patterns = mutableListOf<String>()
+
+        lines.forEachIndexed { index, s ->
+            if (index == 0) {
+                val split = s.split(", ")
+                towels.addAll(split)
+            } else if (s.isNotBlank()) {
+                patterns.add(s)
+            }
+        }
+
+        // 311
+        part1(towels, patterns).printObject()
+        part2(towels, patterns).printObject()
+    }
+
+    fun part1(towels: List<String>, patterns: List<String>): Int {
+        val trie = Trie()
+        var count = 0
+        towels.forEach { towel ->
+            trie.add(towel)
+        }
+        patterns.forEach { pattern ->
+            if (isPatternValid(trie, pattern)) {
+                count++
+            }
+        }
+        return count
+    }
+
+    fun part2(towels: List<String>, patterns: List<String>): Int {
+        val trie = Trie()
+        var count = 0
+        var maxTowelLength = 0
+        towels.forEach { towel ->
+            trie.add(towel)
+            maxTowelLength = max(towel.length, maxTowelLength)
+        }
+        patterns.forEachIndexed { index, pattern ->
+            println("Verifying pattern ${index + 1}/${patterns.size}: $pattern")
+            count += getNumberOfCombinations(trie, pattern)
+        }
+        return count
+    }
+
+    fun getNumberOfCombinations(trie: Trie, pattern: String): Int {
+        var combinations = 0
+        val stack = ArrayDeque<Visit>()
+        val visits = LinkedHashSet<Visit>()
+        stack.add(Visit(index = 0, segments = emptyList()))
+        while (stack.isNotEmpty()) {
+            val currentVisit = stack.removeFirst()
+            val left = currentVisit.index
+            var right = left + 1
+            visits.add(currentVisit)
+            while (right <= pattern.length) {
+                val segment = pattern.substring(left, right)
+                if (trie.contains(segment)) {
+                    // println("Stack being added: $right, $segment")
+                    if (right == pattern.length) {
+                        combinations++
+                    }
+                    val nextSegments = ArrayList(currentVisit.segments)
+                    nextSegments.add(segment)
+                    val nextVisit = Visit(right, nextSegments)
+                    if (!visits.contains(nextVisit)) {
+                        stack.addFirst(nextVisit)
+                    }
+                }
+                right++
+            }
+        }
+        return combinations
+    }
+
+    data class Visit(val index: Int, val segments: List<String>)
+
+    fun isPatternValid(trie: Trie, pattern: String): Boolean {
+        val stack = ArrayDeque<Int>()
+        val visited = LinkedHashSet<Int>()
+        stack.add(0)
+        while (stack.isNotEmpty()) {
+            val left = stack.removeFirst()
+            visited.add(left)
+            var right = left + 1
+            while (right <= pattern.length) {
+                if (!visited.contains(right)) {
+                    val segment = pattern.substring(left, right)
+                    if (trie.contains(segment)) {
+                        if (right == pattern.length) {
+                            return true
+                        }
+                        stack.addFirst(right)
+                    }
+                }
+                right++
+            }
+        }
+        return false
+    }
+
+    data class Trie(
+        private val root: Node = Node(value = ROOT_CHAR)
+    ) {
+
+        companion object {
+            const val ROOT_CHAR = '*'
+        }
+
+        fun add(word: String) {
+            var currentNode: Node = root
+            word.forEach { char ->
+                var node = currentNode.find(char)
+                if (node == null) {
+                    node = currentNode.add(char)
+                }
+                currentNode = node
+            }
+            currentNode.setWord(true)
+        }
+
+        fun startsWith(word: String): Boolean {
+            var currentNode: Node? = root
+            word.forEach { char ->
+                val nextNode = currentNode?.find(char) ?: return false
+                currentNode = nextNode
+            }
+            return true
+        }
+
+        fun contains(word: String): Boolean {
+            var currentNode: Node? = root
+            word.forEach { char ->
+                val nextNode = currentNode?.find(char) ?: return false
+                currentNode = nextNode
+            }
+            return currentNode != null && currentNode!!.isWord()
+        }
+
+        data class Node(
+            private val value: Char,
+            private val nodes: MutableMap<Char, Node> = LinkedHashMap(),
+            private var isWord: Boolean = false
+        ) {
+
+            fun isWord() = isWord
+
+            fun isEmpty(): Boolean {
+                return nodes.isEmpty()
+            }
+
+            fun setWord(isWord: Boolean) {
+                this.isWord = isWord
+            }
+
+            fun find(value: Char): Node? {
+                return nodes[value]
+            }
+
+            fun add(value: Char): Node {
+                val node = Node(value)
+                nodes[value] = node
+                return node
+            }
+
+        }
+
+    }
+
+
+}
