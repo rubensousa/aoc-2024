@@ -1,7 +1,4 @@
-import kotlin.math.max
-
 object Day19 {
-
 
     @JvmStatic
     fun main(args: Array<String>) {
@@ -20,7 +17,7 @@ object Day19 {
 
         // 311
         part1(towels, patterns).printObject()
-        part2(towels, patterns).printObject()
+        part2Dp(towels, patterns).printObject()
     }
 
     fun part1(towels: List<String>, patterns: List<String>): Int {
@@ -37,52 +34,56 @@ object Day19 {
         return count
     }
 
-    fun part2(towels: List<String>, patterns: List<String>): Int {
+    fun part2Trie(towels: List<String>, patterns: List<String>): Long {
         val trie = Trie()
-        var count = 0
-        var maxTowelLength = 0
+        var count = 0L
         towels.forEach { towel ->
             trie.add(towel)
-            maxTowelLength = max(towel.length, maxTowelLength)
         }
-        patterns.forEachIndexed { index, pattern ->
-            println("Verifying pattern ${index + 1}/${patterns.size}: $pattern")
-            count += getNumberOfCombinations(trie, pattern)
+        patterns.forEach { pattern ->
+            if (isPatternValid(trie, pattern)) {
+                count++
+            }
+        }
+        // TODO
+        return 0L
+    }
+
+    fun part2Dp(towels: List<String>, patterns: List<String>): Long {
+        var count = 0L
+        patterns.forEach { pattern ->
+            count += getNumberOfCombinations(towels, pattern)
         }
         return count
     }
 
-    fun getNumberOfCombinations(trie: Trie, pattern: String): Int {
-        var combinations = 0
-        val stack = ArrayDeque<Visit>()
-        val visits = LinkedHashSet<Visit>()
-        stack.add(Visit(index = 0, segments = emptyList()))
-        while (stack.isNotEmpty()) {
-            val currentVisit = stack.removeFirst()
-            val left = currentVisit.index
-            var right = left + 1
-            visits.add(currentVisit)
-            while (right <= pattern.length) {
-                val segment = pattern.substring(left, right)
-                if (trie.contains(segment)) {
-                    // println("Stack being added: $right, $segment")
-                    if (right == pattern.length) {
-                        combinations++
-                    }
-                    val nextSegments = ArrayList(currentVisit.segments)
-                    nextSegments.add(segment)
-                    val nextVisit = Visit(right, nextSegments)
-                    if (!visits.contains(nextVisit)) {
-                        stack.addFirst(nextVisit)
-                    }
+    private fun getNumberOfCombinations(towels: List<String>, pattern: String): Long {
+        val total = LongArray(pattern.length + 1) { 0L }
+        total[0] = 1L
+        for (i in pattern.indices) {
+            val currentTotal = total[i]
+            for (towel in towels) {
+                if (doesPatternSegmentContainTowel(pattern, towel, i)) {
+                    total[i + towel.length] += currentTotal
                 }
-                right++
             }
         }
-        return combinations
+        return total[pattern.length]
     }
 
-    data class Visit(val index: Int, val segments: List<String>)
+    private fun doesPatternSegmentContainTowel(
+        pattern: String,
+        towel: String,
+        segmentOffset: Int
+    ): Boolean {
+        for (i in towel.indices) {
+            val index = segmentOffset + i
+            if (index >= pattern.length || pattern[index] != towel[i]) {
+                return false
+            }
+        }
+        return true
+    }
 
     fun isPatternValid(trie: Trie, pattern: String): Boolean {
         val stack = ArrayDeque<Int>()
@@ -128,15 +129,6 @@ object Day19 {
             currentNode.setWord(true)
         }
 
-        fun startsWith(word: String): Boolean {
-            var currentNode: Node? = root
-            word.forEach { char ->
-                val nextNode = currentNode?.find(char) ?: return false
-                currentNode = nextNode
-            }
-            return true
-        }
-
         fun contains(word: String): Boolean {
             var currentNode: Node? = root
             word.forEach { char ->
@@ -153,10 +145,6 @@ object Day19 {
         ) {
 
             fun isWord() = isWord
-
-            fun isEmpty(): Boolean {
-                return nodes.isEmpty()
-            }
 
             fun setWord(isWord: Boolean) {
                 this.isWord = isWord

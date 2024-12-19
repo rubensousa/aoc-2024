@@ -41,7 +41,7 @@ class Day19Test {
             "brgr",
             "bbrgwb",
         )
-        assertThat(Day19.part2(towels, patterns)).isEqualTo(16)
+        assertThat(Day19.part2Dp(towels, patterns)).isEqualTo(16)
     }
 
 
