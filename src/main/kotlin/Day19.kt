@@ -1,3 +1,5 @@
+import kotlin.math.max
+
 object Day19 {
 
     @JvmStatic
@@ -14,18 +16,25 @@ object Day19 {
                 patterns.add(s)
             }
         }
-
-        // 311
-        part1(towels, patterns).printObject()
-        part2Dp(towels, patterns).printObject()
-    }
-
-    fun part1(towels: List<String>, patterns: List<String>): Int {
         val trie = Trie()
-        var count = 0
         towels.forEach { towel ->
             trie.add(towel)
         }
+
+        // 311
+        printAndReport {
+            part1(trie, patterns)
+        }
+        printAndReport {
+            part2Dp(towels, patterns)
+        }
+        printAndReport {
+            part2TrieDp(trie, patterns)
+        }
+    }
+
+    fun part1(trie: Trie, patterns: List<String>): Int {
+        var count = 0
         patterns.forEach { pattern ->
             if (isPatternValid(trie, pattern)) {
                 count++
@@ -34,19 +43,24 @@ object Day19 {
         return count
     }
 
-    fun part2Trie(towels: List<String>, patterns: List<String>): Long {
-        val trie = Trie()
+    fun part2TrieDp(trie: Trie, patterns: List<String>): Long {
         var count = 0L
-        towels.forEach { towel ->
-            trie.add(towel)
-        }
         patterns.forEach { pattern ->
-            if (isPatternValid(trie, pattern)) {
-                count++
+            val total = LongArray(pattern.length + 1) { 0L }
+            total[0] = 1L
+            for (left in pattern.indices) {
+                val currentTotal = total[left]
+                var right = left
+                while (right <= pattern.length) {
+                    if (trie.contains(pattern, left, right)) {
+                        total[right] += currentTotal
+                    }
+                    right++
+                }
             }
+            count += total[pattern.length]
         }
-        // TODO
-        return 0L
+        return count
     }
 
     fun part2Dp(towels: List<String>, patterns: List<String>): Long {
@@ -116,7 +130,12 @@ object Day19 {
             const val ROOT_CHAR = '*'
         }
 
+        private var maxWordSize = 0
+
+        fun getMaxWordSize() = maxWordSize
+
         fun add(word: String) {
+            maxWordSize = max(word.length, maxWordSize)
             var currentNode: Node = root
             word.forEach { char ->
                 var node = currentNode.find(char)
@@ -130,7 +149,7 @@ object Day19 {
 
         fun contains(word: String, left: Int, right: Int): Boolean {
             var currentNode: Node = root
-            for(i in left until right) {
+            for (i in left until right) {
                 val nextNode = currentNode.find(word[i]) ?: return false
                 currentNode = nextNode
             }
