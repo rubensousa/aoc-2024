@@ -95,8 +95,7 @@ object Day19 {
             var right = left + 1
             while (right <= pattern.length) {
                 if (!visited.contains(right)) {
-                    val segment = pattern.substring(left, right)
-                    if (trie.contains(segment)) {
+                    if (trie.contains(pattern, left, right)) {
                         if (right == pattern.length) {
                             return true
                         }
@@ -129,13 +128,22 @@ object Day19 {
             currentNode.setWord(true)
         }
 
-        fun contains(word: String): Boolean {
-            var currentNode: Node? = root
-            word.forEach { char ->
-                val nextNode = currentNode?.find(char) ?: return false
+        fun contains(word: String, left: Int, right: Int): Boolean {
+            var currentNode: Node = root
+            for(i in left until right) {
+                val nextNode = currentNode.find(word[i]) ?: return false
                 currentNode = nextNode
             }
-            return currentNode != null && currentNode!!.isWord()
+            return currentNode.isWord()
+        }
+
+        fun contains(word: String): Boolean {
+            var currentNode: Node = root
+            word.forEach { char ->
+                val nextNode = currentNode.find(char) ?: return false
+                currentNode = nextNode
+            }
+            return currentNode.isWord()
         }
 
         data class Node(
