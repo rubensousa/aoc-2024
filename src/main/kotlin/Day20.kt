@@ -1,13 +1,12 @@
 import grid.Direction
 import grid.Point
-import kotlin.math.min
 
 
 object Day20 {
 
     @JvmStatic
     fun main(args: Array<String>) {
-        val lines = readText("day20.txt")
+        val lines = readText("day20_sample.txt")
         val grid = Grid(size = lines.size)
         lines.forEach { line ->
             grid.addLine(line)
@@ -15,19 +14,20 @@ object Day20 {
 
         // 1429
         printAndReport {
-            part1Optimized(grid)
-        }
-        printAndReport {
             part1(grid)
+        }
+        // 369141 -> too low
+        printAndReport {
+            part2(grid)
         }
     }
 
     private fun part1(grid: Grid): Long {
-        return grid.getCheats()
+        return grid.getSingleCheatCount(timeDiff = 2)
     }
 
-    private fun part1Optimized(grid: Grid): Long {
-        return grid.getFasterCheats()
+    private fun part2(grid: Grid): Int {
+        return grid.getMultipleCheatCount(limit = 20, timeDiff = 50)
     }
 
     class Grid(val size: Int) {
@@ -52,13 +52,11 @@ object Day20 {
             rows.add(row)
         }
 
-        fun getFasterCheats(): Long {
+        fun getSingleCheatCount(timeDiff: Int): Long {
             var cheats = 0L
             val shortestPath = findShortestPath()
-            val distancesToEnd = mutableMapOf<Point, Int>()
             val distancesToStart = mutableMapOf<Point, Int>()
             shortestPath.forEachIndexed { index, point ->
-                distancesToEnd[point] = shortestPath.size - index
                 distancesToStart[point] = index
             }
             for (originalRow in 0 until rows.size) {
@@ -70,8 +68,8 @@ object Day20 {
                         Direction.entries.forEach { direction ->
                             val nextPoint = currentPoint.move(direction)
                             if (shortestPath.contains(nextPoint)) {
-                                val nextDistanceToEnd = distancesToEnd[nextPoint]!!
                                 val nextDistanceToStart = distancesToStart[nextPoint]!!
+                                val nextDistanceToEnd = shortestPath.size - nextDistanceToStart
                                 if (nextDistanceToEnd < minDistanceToEnd) {
                                     minDistanceToEnd = nextDistanceToEnd
                                 }
@@ -82,7 +80,7 @@ object Day20 {
                         }
                         if (minDistanceToEnd != Int.MAX_VALUE && minDistanceToStart != Int.MAX_VALUE) {
                             val distanceToEnd = minDistanceToEnd + minDistanceToStart + 1
-                            if (distanceToEnd + 100 <= shortestPath.size) {
+                            if (distanceToEnd + timeDiff <= shortestPath.size) {
                                 cheats++
                             }
                         }
@@ -92,36 +90,114 @@ object Day20 {
             return cheats
         }
 
-        fun getCheats(): Long {
-            var cheats = 0L
-            val shortestPath = findShortestPathLengthBfs(
-                start = startLocation,
-                end = endLocation,
-                exclusions = setOf()
-            )
+        fun getMultipleCheatCount(limit: Int, timeDiff: Int): Int {
+            var cheats = 0
+            val shortestPath = findShortestPath()
+            val distancesToStart = mutableMapOf<Point, Int>()
+            val shortcuts = mutableSetOf<Shortcut>()
+            shortestPath.toList().forEachIndexed { index, point ->
+                distancesToStart[point] = index
+            }
             for (originalRow in 0 until rows.size) {
                 for (originalCol in 0 until colSize) {
                     if (getElement(y = originalRow, x = originalCol) == Element.WALL) {
-                        val newLength = findShortestPathLengthBfs(
-                            start = startLocation,
-                            end = endLocation,
-                            exclusions = setOf(
-                                Point(
-                                    y = originalRow,
-                                    x = originalCol
-                                )
-                            )
+                        val wallPoint = Point(x = originalCol, y = originalRow)
+                        val shortcutsFound = findShortcuts(
+                            wallPoint,
+                            shortestPath,
+                            distancesToStart,
+                            limit,
+                            timeDiff
                         )
-                        if (newLength + 100 <= shortestPath) {
-                            cheats++
+                        shortcutsFound.forEach { shortcut ->
+                            if (!shortcuts.contains(shortcut) && !shortcuts.contains(shortcut.reversed())) {
+                                shortcuts.add(shortcut)
+                                cheats++
+                            }
                         }
                     }
                 }
             }
+            shortcuts.filter { it.savings == 76 }.size.printObject()
+        //    println(shortcuts)
             return cheats
         }
 
-        fun findShortestPath(): List<Point> {
+        fun findShortcuts(
+            wallPoint: Point,
+            shortestPath: Set<Point>,
+            distancesToStart: Map<Point, Int>,
+            shortcutLimit: Int,
+            lengthDiff: Int,
+        ): Set<Shortcut> {
+            var minDistanceToStart = Int.MAX_VALUE
+            Direction.entries.forEach { direction ->
+                val nextPoint = wallPoint.move(direction)
+                if (shortestPath.contains(nextPoint)) {
+                    val nextDistanceToStart = distancesToStart[nextPoint]!!
+                    if (nextDistanceToStart < minDistanceToStart) {
+                        minDistanceToStart = nextDistanceToStart
+                    }
+                }
+            }
+            // We can only search forwards if the current wall can connect to the shortest path
+            if (minDistanceToStart == Int.MAX_VALUE) {
+                return emptySet()
+            }
+            val shortcuts = mutableSetOf<Shortcut>()
+            val stack = ArrayDeque<Traversal>()
+            val visited = linkedSetOf<Point>()
+            val wallDistanceToStart = minDistanceToStart + 1
+            // Start length as current distance to start
+            stack.addFirst(Traversal(length = wallDistanceToStart, point = wallPoint))
+            while (stack.isNotEmpty()) {
+                val currentTraversal = stack.removeFirst()
+                val currentPoint = currentTraversal.point
+                visited.add(currentPoint)
+                if (shortestPath.contains(currentPoint)) {
+                    // We found a point part of the shortest path, now check if distance got shorter
+                    val nextDistanceToStart = distancesToStart[currentPoint]!!
+                    val nextDistanceToEnd = shortestPath.size - nextDistanceToStart
+                    val distanceToEnd = wallDistanceToStart + nextDistanceToEnd
+                    if (distanceToEnd + lengthDiff <= shortestPath.size) {
+                        shortcuts.add(
+                            Shortcut(
+                                start = wallPoint,
+                                end = currentPoint,
+                                savings = shortestPath.size - distanceToEnd
+                            )
+                        )
+                    }
+                }
+
+                // Do not continue searching if we've exhausted the length of the shorcut
+                val withinRange = currentTraversal.length - wallDistanceToStart <= shortcutLimit
+                if (withinRange) {
+                    Direction.entries.forEach { direction ->
+                        val nextPoint = currentPoint.move(direction)
+                        if (isWithinBounds(nextPoint) && !visited.contains(nextPoint)) {
+                            stack.addFirst(
+                                currentTraversal.copy(
+                                    length = currentTraversal.length + 1,
+                                    point = nextPoint
+                                )
+                            )
+                        }
+                    }
+                }
+            }
+            return shortcuts
+        }
+
+        data class Shortcut(val start: Point, val end: Point, val savings: Int) {
+
+            fun reversed(): Shortcut {
+                return copy(start = end, end = start)
+            }
+
+        }
+
+        fun findShortestPath(): Set<Point> {
             var currentPoint = startLocation
             val visited = mutableSetOf<Point>()
             visited.add(currentPoint)
@@ -137,38 +213,7 @@ object Day20 {
                     }
                 }
             }
-            return visited.toList()
-        }
-
-        fun findShortestPathWithCheat(wall: Point): Int {
-            var length = Int.MAX_VALUE
-            val stack = ArrayDeque<Traversal>()
-            val visited = mutableSetOf<Point>()
-            stack.addLast(Traversal(length = 1, startLocation, emptySet()))
-            while (stack.isNotEmpty()) {
-                val currentTraversal = stack.removeFirst()
-                val currentPoint = currentTraversal.point
-                visited.add(currentPoint)
-                if (currentPoint == endLocation) {
-                    length = Math.min(currentTraversal.length, length)
-                    continue
-                }
-                Direction.entries.forEach { direction ->
-                    val nextPoint = currentPoint.move(direction)
-                    if (isWithinBounds(nextPoint)
-                        && (!hasWall(nextPoint) || nextPoint == wall)
-                        && !visited.contains(nextPoint)
-                    ) {
-                        stack.addLast(
-                            currentTraversal.copy(
-                                length = currentTraversal.length + 1,
-                                point = nextPoint
-                            )
-                        )
-                    }
-                }
-            }
-            return length
+            return visited
         }
 
         fun findShortestPathLengthGraph(exclusions: Set<Point>): Long {
@@ -178,79 +223,7 @@ object Day20 {
             return distances[endLocation]!!.toLong()
         }
 
-        fun findShortestPathBfs(exclusions: Set<Point>, start: Point, end: Point): ShortestPath {
-            var length = Long.MAX_VALUE
-            val stack = ArrayDeque<Traversal>()
-            var smallestPath = emptySet<Point>()
-            val globalVisits = mutableSetOf<Point>()
-            stack.addFirst(Traversal(length = 0, point = start, visited = setOf(start)))
-
-            while (stack.isNotEmpty()) {
-                val currentTraversal = stack.removeFirst()
-                val point = currentTraversal.point
-                if (currentTraversal.point == end) {
-                    if (currentTraversal.visited.size < length) {
-                        smallestPath = currentTraversal.visited
-                        length = currentTraversal.visited.size.toLong()
-                    }
-                    continue
-                }
-                globalVisits.add(point)
-                Direction.entries.forEach { direction ->
-                    val nextPoint = point.move(direction)
-                    if (canTraverse(nextPoint, exclusions) && !globalVisits.contains(nextPoint)) {
-                        val newPath = currentTraversal.visited.toMutableSet()
-                        newPath.add(nextPoint)
-                        stack.addLast(
-                            currentTraversal.copy(
-                                length = currentTraversal.length + 1,
-                                point = nextPoint,
-                                visited = newPath
-                            )
-                        )
-                    }
-                }
-            }
-            // printVisited(visited)
-            return ShortestPath(smallestPath)
-        }
-
-        fun findShortestPathLengthBfs(
-            exclusions: Set<Point>,
-            start: Point,
-            end: Point
-        ): Int {
-            var length = Int.MAX_VALUE
-            val stack = ArrayDeque<Traversal>()
-            val visited = mutableSetOf<Point>()
-            stack.addFirst(Traversal(length = 1, point = start, visited = emptySet()))
-
-            while (stack.isNotEmpty()) {
-                val currentTraversal = stack.removeFirst()
-                val point = currentTraversal.point
-                if (currentTraversal.point == end) {
-                    length = min(currentTraversal.length, length)
-                    continue
-                }
-                visited.add(point)
-                Direction.entries.forEach { direction ->
-                    val nextPoint = point.move(direction)
-                    if (canTraverse(nextPoint, exclusions) && !visited.contains(nextPoint)) {
-                        stack.addLast(
-                            currentTraversal.copy(
-                                length = currentTraversal.length + 1,
-                                point = nextPoint
-                            )
-                        )
-                    }
-                }
-            }
-            return length
-        }
-
-        data class ShortestPath(val visited: Set<Point>)
-
-        data class Traversal(val length: Int, val point: Point, val visited: Set<Point>)
+        data class Traversal(val length: Int, val point: Point)
 
         fun buildGraph(exclusions: Set<Point>): Graph {
             val graph = Graph()
