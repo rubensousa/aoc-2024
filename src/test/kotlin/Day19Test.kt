@@ -16,7 +16,11 @@ class Day19Test {
             "brgr",
             "bbrgwb",
         )
-        assertThat(Day19.part1(towels, patterns)).isEqualTo(6)
+        val trie = Day19.Trie()
+        towels.forEach { towel ->
+            trie.add(towel)
+        }
+        assertThat(Day19.part1(trie, patterns)).isEqualTo(6)
     }
 
     @Test
@@ -25,7 +29,11 @@ class Day19Test {
         val patterns = listOf(
             "brwrb",
         )
-        assertThat(Day19.part1(towels, patterns)).isEqualTo(0)
+        val trie = Day19.Trie()
+        towels.forEach { towel ->
+            trie.add(towel)
+        }
+        assertThat(Day19.part1(trie, patterns)).isEqualTo(0)
     }
 
     @Test
